@@ -95,4 +95,13 @@ InvestApp/
 │   └─ tailwind.config.js
 ├─ README.md
 └─ .gitignore
-``` 
+```
+
+## Novidades Técnicas
+
+- Correção do cálculo do valor da carteira ao longo do tempo: agora o último ponto do gráfico reflete exatamente o valor da carteira atual, utilizando as cotações mais recentes disponíveis para cada ativo.
+- Implementação de preenchimento automático de cotações históricas para todos os dias úteis, utilizando a última cotação conhecida para cada ativo, garantindo precisão no histórico da carteira.
+- Ajustes na API para garantir consistência entre o valor exibido nos cards de totais e o valor apresentado no gráfico de evolução da carteira.
+- Integração com a API Alpha Vantage para obtenção de cotações de ativos em tempo real.
+- Melhoria na estrutura do backend, eliminando duplicidade de classes e métodos, tornando o código mais limpo e eficiente.
+- Garantia de atualização dos dados em tempo real no frontend, refletindo imediatamente as operações e cotações mais recentes. 
