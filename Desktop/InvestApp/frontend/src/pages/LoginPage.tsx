@@ -14,6 +14,7 @@ export default function LoginPage() {
       return;
     }
     setError("");
+    localStorage.setItem('usuarioId', userId);
     navigate(`/dashboard?usuarioId=${userId}`);
   }
 

@@ -1,6 +1,7 @@
 import React from "react";
 import { useLocation, useNavigate, NavLink } from "react-router-dom";
 import { useInvestData } from "@/hooks/useInvestData";
+import api from "@/services/api";
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from "recharts";
 import {
   BarChart2,
@@ -20,15 +21,41 @@ function useQuery() {
 export default function DashboardPage() {
   const query = useQuery();
   const navigate = useNavigate();
+  const location = useLocation();
   const usuarioIdParam = query.get("usuarioId");
   const usuarioId = usuarioIdParam ? parseInt(usuarioIdParam, 10) : NaN;
   const { totalInvestido, posicaoPorPapel, posicaoGlobal, totalCorretagem, loading, error } = useInvestData(usuarioId);
+  const [nomeUsuario, setNomeUsuario] = React.useState<string>("");
 
   React.useEffect(() => {
-    if (isNaN(usuarioId)) {
+    let id = usuarioId;
+    if (isNaN(id)) {
+      // Tenta recuperar do localStorage
+      const storedId = localStorage.getItem('usuarioId');
+      if (storedId && !isNaN(Number(storedId))) {
+        id = Number(storedId);
+        // Redireciona para a mesma página com o usuarioId na URL
+        navigate(`${location.pathname}?usuarioId=${id}`, { replace: true });
+        return;
+      }
+      // Se não encontrar, vai para login
       navigate("/");
+    } else {
+      // Salva no localStorage para persistir entre páginas
+      localStorage.setItem('usuarioId', id.toString());
     }
-  }, [usuarioId, navigate]);
+  }, [usuarioId, navigate, location.pathname]);
+
+  // Buscar nome do usuário ao carregar
+  React.useEffect(() => {
+    if (!isNaN(usuarioId)) {
+      api.get(`/invest/usuario/${usuarioId}`)
+        .then(res => {
+          if (res.data && res.data.nome) setNomeUsuario(res.data.nome);
+        })
+        .catch(() => setNomeUsuario(""));
+    }
+  }, [usuarioId]);
 
   if (loading) {
     return (
@@ -89,7 +116,7 @@ export default function DashboardPage() {
           </nav>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-white text-lg font-medium">Kaique Suzart</span>
+          <span className="text-white text-lg font-medium">{nomeUsuario || "Usuário"}</span>
           <div className="bg-[#e5e7eb] rounded-full w-10 h-10 flex items-center justify-center">
             <svg width="24" height="24" fill="#004080"><circle cx="12" cy="8" r="4"/><ellipse cx="12" cy="18" rx="7" ry="4"/></svg>
           </div>
@@ -131,7 +158,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {posicaoGlobal?.operacoes?.map((op, idx) => (
-                    <tr key={op.id + idx} className="even:bg-gray-100">
+                    <tr key={`${op.id}-${op.data}-${op.tipo}-${idx}`} className="even:bg-gray-100">
                       <td className="px-4 py-2">{new Date(op.data).toLocaleDateString("pt-BR")}</td>
                       <td className="px-4 py-2">{op.ativo}</td>
                       <td className="px-4 py-2">{op.tipo}</td>

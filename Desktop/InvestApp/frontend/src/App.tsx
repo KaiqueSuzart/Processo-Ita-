@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from '@/pages/LoginPage';
 import DashboardPage from '@/pages/DashboardPage';
 import PortfolioPage from '@/pages/PortfolioPage';
+import OperacoesPage from '@/pages/OperacoesPage';
+import PosicoesPage from '@/pages/PosicoesPage';
+import CotacoesPage from '@/pages/CotacoesPage';
 import { Header } from '@/components/Header';
 
 function App() {
@@ -14,6 +17,9 @@ function App() {
           <Route path="/" element={<LoginPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
+          <Route path="/operacoes" element={<OperacoesPage />} />
+          <Route path="/posicoes" element={<PosicoesPage />} />
+          <Route path="/cotacoes" element={<CotacoesPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
