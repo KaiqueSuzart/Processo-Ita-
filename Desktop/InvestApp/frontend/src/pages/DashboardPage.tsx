@@ -9,10 +9,12 @@ import {
   DollarSign,
   AlertCircle,
   Loader2,
-  LogOut
+  LogOut,
+  RefreshCw
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PieChart, Pie, Cell, LineChart, Line, YAxis, CartesianGrid, Legend } from "recharts";
+import { LineChart as MiniLineChart, Line as MiniLine, ResponsiveContainer as MiniResponsiveContainer, Tooltip as MiniTooltip } from "recharts";
 
 function useQuery() {
   return new URLSearchParams(useLocation().search);
@@ -26,6 +28,8 @@ export default function DashboardPage() {
   const usuarioId = usuarioIdParam ? parseInt(usuarioIdParam, 10) : NaN;
   const { totalInvestido, posicaoPorPapel, posicaoGlobal, totalCorretagem, loading, error } = useInvestData(usuarioId);
   const [nomeUsuario, setNomeUsuario] = React.useState<string>("");
+  const [lastUpdate, setLastUpdate] = React.useState<Date | null>(null);
+  const [refreshing, setRefreshing] = React.useState(false);
 
   React.useEffect(() => {
     let id = usuarioId;
@@ -56,6 +60,18 @@ export default function DashboardPage() {
         .catch(() => setNomeUsuario(""));
     }
   }, [usuarioId]);
+
+  // Função para atualizar dados
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await new Promise(r => setTimeout(r, 500)); // Simula tempo de fetch
+    window.location.reload(); // Simples: recarrega tudo (pode ser melhorado para fetch sem reload)
+    setRefreshing(false);
+  };
+
+  React.useEffect(() => {
+    setLastUpdate(new Date());
+  }, [totalInvestido, posicaoPorPapel, posicaoGlobal, totalCorretagem]);
 
   if (loading) {
     return (
@@ -126,19 +142,53 @@ export default function DashboardPage() {
       {/* Conteúdo principal: cards, tabela e gráficos */}
       <div className="pt-28 pb-10 max-w-7xl mx-auto px-4">
         {/* Cards de totais */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-10">
-          <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center border-t-4 border-[#004080]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-2">
+          <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center border-t-4 border-[#004080] w-full">
             <span className="text-gray-500 text-lg mb-2">Carteira Atual</span>
             <span className="text-3xl font-bold text-[#FF6600]">{posicaoGlobal ? posicaoGlobal.valorMercado.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}</span>
+            {/* Sparkline */}
+            <div className="w-full h-10 mt-2">
+              <MiniResponsiveContainer width="100%" height="100%">
+                <MiniLineChart data={historicoCarteira.slice(-7)}>
+                  <MiniLine type="monotone" dataKey="valor" stroke="#FF6600" strokeWidth={2} dot={false} />
+                  <MiniTooltip formatter={(val:number) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} labelFormatter={d => `Dia: ${d}`} />
+                </MiniLineChart>
+              </MiniResponsiveContainer>
+            </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center border-t-4 border-[#004080]">
+          <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center border-t-4 border-[#004080] w-full">
             <span className="text-gray-500 text-lg mb-2">Custo Total</span>
             <span className="text-3xl font-bold text-[#004080]">{posicaoGlobal ? posicaoGlobal.custoTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}</span>
+            {/* Sparkline */}
+            <div className="w-full h-10 mt-2">
+              <MiniResponsiveContainer width="100%" height="100%">
+                <MiniLineChart data={historicoCarteira.slice(-7)}>
+                  <MiniLine type="monotone" dataKey="valor" stroke="#004080" strokeWidth={2} dot={false} />
+                  <MiniTooltip formatter={(val:number) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} labelFormatter={d => `Dia: ${d}`} />
+                </MiniLineChart>
+              </MiniResponsiveContainer>
+            </div>
           </div>
-          <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center border-t-4 border-[#FF6600]">
+          <div className="bg-white rounded-2xl shadow-md p-8 flex flex-col items-center border-t-4 border-[#FF6600] w-full">
             <span className="text-gray-500 text-lg mb-2">Lucro/Prejuízo</span>
             <span className={`text-3xl font-bold ${posicaoGlobal && posicaoGlobal.pnL >= 0 ? "text-green-600" : "text-red-600"}`}>{posicaoGlobal ? posicaoGlobal.pnL.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) : "-"}</span>
+            {/* Sparkline */}
+            <div className="w-full h-10 mt-2">
+              <MiniResponsiveContainer width="100%" height="100%">
+                <MiniLineChart data={historicoCarteira.slice(-7)}>
+                  <MiniLine type="monotone" dataKey="valor" stroke={posicaoGlobal && posicaoGlobal.pnL >= 0 ? "#16a34a" : "#dc2626"} strokeWidth={2} dot={false} />
+                  <MiniTooltip formatter={(val:number) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} labelFormatter={d => `Dia: ${d}`} />
+                </MiniLineChart>
+              </MiniResponsiveContainer>
+            </div>
           </div>
+        </div>
+        {/* Última atualização e botão de refresh */}
+        <div className="flex items-center gap-4 mb-8 ml-2">
+          <span className="text-sm text-gray-500">Última atualização: {lastUpdate ? lastUpdate.toLocaleString("pt-BR") : "-"}</span>
+          <button onClick={handleRefresh} className="ml-2 p-2 rounded hover:bg-gray-200 transition-colors" title="Atualizar" disabled={refreshing}>
+            <RefreshCw className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
         </div>
         {/* Grid para tabela e gráficos */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
@@ -157,7 +207,10 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {posicaoGlobal?.operacoes?.map((op, idx) => (
+                  {(posicaoGlobal?.operacoes
+                    ?.slice()
+                    ?.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+                    ?.slice(0, 7) || []).map((op, idx) => (
                     <tr key={`${op.id}-${op.data}-${op.tipo}-${idx}`} className="even:bg-gray-100">
                       <td className="px-4 py-2">{new Date(op.data).toLocaleDateString("pt-BR")}</td>
                       <td className="px-4 py-2">{op.ativo}</td>
@@ -169,16 +222,22 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
+            {/* Link para ver todas as operações */}
+            {posicaoGlobal?.operacoes?.length > 7 && (
+              <div className="flex justify-end mt-2">
+                <NavLink to={`/operacoes?usuarioId=${usuarioId}`} className="text-[#004080] hover:underline text-sm font-medium">Ver todas →</NavLink>
+              </div>
+            )}
           </div>
           {/* Gráficos */}
           <div className="flex flex-col gap-8">
             <div className="bg-white rounded-2xl shadow-md p-8 flex-1">
               <h3 className="text-xl font-semibold text-[#004080] mb-4">Valor da Carteira ao longo do tempo</h3>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={historicoCarteira} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <LineChart data={historicoCarteira} margin={{ top: 10, right: 30, left: 30, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <YAxis tick={{ fill: "#004080" }} width={80} tickFormatter={v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />
-                  <Tooltip formatter={(val: number) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} />
+                  <Tooltip formatter={(val: number) => val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} labelFormatter={d => `Data: ${d}`} />
                   <Legend />
                   <Line type="monotone" dataKey="valor" stroke="#004080" strokeWidth={3} dot={false} name="Carteira" />
                 </LineChart>

@@ -1,0 +1,364 @@
+openapi: 3.0.0
+info:
+  title: InvestApp API
+  version: 1.0.0
+  description: API REST para operações, cotações, posições e consultas financeiras do InvestApp.
+servers:
+  - url: /invest
+paths:
+  /usuario/{usuarioId}/posicaoGlobal:
+    get:
+      summary: Consultar a posição global de um cliente
+      parameters:
+        - in: path
+          name: usuarioId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Posição global encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalPositionDto'
+
+  /usuario/{usuarioId}/posicaoPorPapel:
+    get:
+      summary: Consultar posição detalhada por ativo para um cliente
+      parameters:
+        - in: path
+          name: usuarioId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de posições por ativo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PosicaoPorPapelDto'
+
+  /usuario/{usuarioId}/totalInvestido:
+    get:
+      summary: Consultar o total investido por ativo para um usuário
+      parameters:
+        - in: path
+          name: usuarioId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de totais investidos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TotalInvestidoPorAtivoDto'
+
+  /usuario/{usuarioId}/totalCorretagem:
+    get:
+      summary: Consultar o valor total de corretagem pago por um usuário
+      parameters:
+        - in: path
+          name: usuarioId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Valor total de corretagem
+          content:
+            application/json:
+              schema:
+                type: number
+                format: decimal
+
+  /ativo/{ativoId}/cotacoes:
+    get:
+      summary: Listar todas as cotações de um ativo
+      parameters:
+        - in: path
+          name: ativoId
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de cotações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CotacaoDto'
+
+  /usuario/{usuarioId}/operacoes:
+    get:
+      summary: Listar operações de um usuário
+      parameters:
+        - in: path
+          name: usuarioId
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: pagina
+          schema:
+            type: integer
+        - in: query
+          name: tamanho
+          schema:
+            type: integer
+        - in: query
+          name: ordenarPor
+          schema:
+            type: string
+        - in: query
+          name: ordem
+          schema:
+            type: string
+        - in: query
+          name: filtroAtivo
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista paginada de operações
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  operacoes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OperacaoDto'
+                  total:
+                    type: integer
+
+  /usuario/{usuarioId}/ativos/{codigoAtivo}/preco-medio:
+    get:
+      summary: Consultar o preço médio de um ativo para um usuário
+      parameters:
+        - in: path
+          name: usuarioId
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: codigoAtivo
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Preço médio encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  usuario_id:
+                    type: integer
+                  codigo:
+                    type: string
+                  preco_medio:
+                    type: number
+
+  /auth/login:
+    post:
+      summary: Autenticação de usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                senha:
+                  type: string
+      responses:
+        '200':
+          description: Login bem-sucedido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        '401':
+          description: Usuário ou senha inválidos
+
+  /auth/usuarios:
+    get:
+      summary: Listar usuários cadastrados
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nome:
+                      type: string
+
+  /api/PrecoMedio/calcular:
+    post:
+      summary: Calcular preço médio ponderado de operações
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/OperacaoDto'
+      responses:
+        '200':
+          description: Preço médio calculado
+          content:
+            application/json:
+              schema:
+                type: number
+        '400':
+          description: Lista de operações inválida
+
+  /clientes/top-posicoes:
+    get:
+      summary: Top 10 clientes com maiores posições
+      responses:
+        '200':
+          description: Lista dos top 10 clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    usuario_id:
+                      type: integer
+                    nome:
+                      type: string
+                    valor_mercado:
+                      type: number
+
+  /clientes/top-corretagem:
+    get:
+      summary: Top 10 clientes que mais pagaram corretagem
+      responses:
+        '200':
+          description: Lista dos top 10 clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    usuario_id:
+                      type: integer
+                    nome:
+                      type: string
+                    total_corretagem:
+                      type: number
+
+components:
+  schemas:
+    GlobalPositionDto:
+      type: object
+      properties:
+        usuarioId:
+          type: integer
+        valorMercado:
+          type: number
+        custoTotal:
+          type: number
+        pnL:
+          type: number
+        operacoes:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperacaoDto'
+        historicoCarteira:
+          type: array
+          items:
+            type: object
+            properties:
+              data:
+                type: string
+              valor:
+                type: number
+        distribuicaoAtivos:
+          type: array
+          items:
+            type: object
+            properties:
+              ativo:
+                type: string
+              valor:
+                type: number
+    PosicaoPorPapelDto:
+      type: object
+      properties:
+        ativoId:
+          type: integer
+        codigo:
+          type: string
+        quantidadeLiquida:
+          type: integer
+        precoMedio:
+          type: number
+        precoAtual:
+          type: number
+    TotalInvestidoPorAtivoDto:
+      type: object
+      properties:
+        ativoId:
+          type: integer
+        codigo:
+          type: string
+        totalInvestido:
+          type: number
+    CotacaoDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        ativoId:
+          type: integer
+        precoUnitario:
+          type: number
+        dataHora:
+          type: string
+          format: date-time
+    OperacaoDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        data:
+          type: string
+          format: date-time
+        ativo:
+          type: string
+        tipo:
+          type: string
+        quantidade:
+          type: integer
+        preco:
+          type: number 

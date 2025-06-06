@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # API RenovaTec
+  renovatec-api:
+    build:
+      context: .  # Contexto de build é o diretório raiz
+      dockerfile: Dockerfile  # Usa o Dockerfile existente
+    image: renovatec-api:latest
+    container_name: renovatec-api
+    ports:
+      - "8080:80"  # Mapeia a porta 80 do container para 8080 do host
+    depends_on:
+      - db  # Garante que o banco de dados inicie primeiro
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__Default=Server=db;Database=RenovaTec;User=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True
+      - ConnectionStrings__ServiceBus=YOUR_SERVICE_BUS_CONNECTION_STRING
+      - Jwt__Key=YOUR_SECRET_KEY_HERE_MIN_16_CHARS
+      - Jwt__Issuer=RenovaTec
+      - Jwt__Audience=RenovaTecClients
+    networks:
+      - renovatec-network
+    restart: unless-stopped
+
+  # SQL Server
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: renovatec-db
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong!Passw0rd
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"  # Mapeia a porta padrão do SQL Server
+    volumes:
+      - sqlserver-data:/var/opt/mssql  # Persiste os dados do banco
+    networks:
+      - renovatec-network
+    restart: unless-stopped
+
+# Volumes para persistência de dados
+volumes:
+  sqlserver-data:
+    name: renovatec-sqlserver-data
+
+# Rede dedicada para comunicação entre os containers
+networks:
+  renovatec-network:
+    name: renovatec-network
+    driver: bridge 
